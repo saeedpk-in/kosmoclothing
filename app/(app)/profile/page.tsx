@@ -2,7 +2,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { User } from "lucide-react";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -37,22 +37,15 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { getUserById, updateUserById } from "@/actions/user";
-import { uploadImage } from "@/actions/upoladImg";
 import { toast } from "sonner";
-const formSchema = z.object({
+import { redirect } from "next/navigation";
+import bcrypt from "bcryptjs";
+const formSchema1 = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
   email: z.string().email({
     message: "email must be in the form of email",
-  }),
-  password: z.string().min(6, {
-    message: "Password must be at least 6 characters.",
-  }),
-  address: z.object({
-    street: z.string().optional(),
-    city: z.string().optional(),
-    postalCode: z.string().optional(),
   }),
   phoneNumber: z
     .string()
@@ -61,44 +54,75 @@ const formSchema = z.object({
     })
     .optional(),
 });
-interface UserInfo {
-  name: string;
-  email: string;
-  password?: string;
-  address?: {
-    street?: string;
-    city?: string;
-    postalCode?: string;
-  };
-  phoneNumber?: string;
-}
+const formSchema2 = z.object({
+  street: z.string().optional(),
+  city: z.string().optional(),
+  postalCode: z.string().optional(),
+});
+const formSchema3 = z.object({
+  current_password: z.string().min(6, {
+    message: "Password must be at least 6 characters.",
+  }),
+  new_password: z.string().min(6, {
+    message: "Password must be at least 6 characters.",
+  }),
+  re_password: z.string().min(6, {
+    message: "Password must be at least 6 characters.",
+  }),
+});
 const page = () => {
-  const [file, setFile] = useState<File | null>(null);
-  const [userInfo, setUserInfo] = useState<UserInfo>({
-    name: "",
-    email: "",
-    password: "",
-    address: {
-      street: "",
+  const { data: session } = useSession();
+  const [pending, startTransition] = useTransition();
+  const [password, setPassword] = useState("");
+  const form1 = useForm<z.infer<typeof formSchema1>>({
+    resolver: zodResolver(formSchema1),
+    defaultValues: {
+      name: session?.user?.name || "",
+      email: session?.user?.email || "",
+      phoneNumber: "",
+    },
+  });
+  const form2 = useForm<z.infer<typeof formSchema2>>({
+    resolver: zodResolver(formSchema2),
+    defaultValues: {
       city: "",
       postalCode: "",
+      street: "",
     },
-    phoneNumber: "",
   });
-  const { data: session } = useSession();
-
+  const form3 = useForm<z.infer<typeof formSchema3>>({
+    resolver: zodResolver(formSchema3),
+    defaultValues: {
+      current_password: "",
+      new_password: "",
+      re_password: "",
+    },
+  });
   useEffect(() => {
     const fetchUserData = async () => {
-      try {
-        const sessionId = session?.user?.id; // Replace with actual session ID retrieval logic
-        if (sessionId) {
-          const response = await getUserById(sessionId?.toString());
-          if (response.success && response.user) setUserInfo(response.user);
-          else console.log(response.error);
+      startTransition(async () => {
+        try {
+          const sessionId = session?.user?.id; // Replace with actual session ID retrieval logic
+          if (sessionId) {
+            const response = await getUserById(sessionId?.toString());
+            if (response.success && response.user) {
+              form1.setValue("name", response.user.name);
+              form1.setValue("email", response.user.email);
+              form1.setValue("phoneNumber", response.user.phoneNumber);
+              form2.setValue("city", response.user.address.city);
+              form2.setValue(
+                "postalCode",
+                response.user.address.postalCode
+              );
+              form2.setValue("street", response.user.address.street);
+              console.log(response.user.password);
+              setPassword(response.user.password);
+            } else console.log(response.error);
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
         }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-      }
+      });
     };
 
     if (session?.user?.id) {
@@ -107,84 +131,85 @@ const page = () => {
     }
   }, [session]);
 
-  async function onSubmit() {
-    // values: z.infer<typeof formSchema>
-    console.log(userInfo);
-    const parsed = formSchema.safeParse(userInfo);
-    if (!parsed.success) {
-      console.error(parsed.error.errors);
-      return;
-    }
-    try {
-      let updatedUserInfo;
-      if (file) {
-        const image = await uploadImage(file);
-        updatedUserInfo = {
-          ...userInfo,
-          address: JSON.stringify(userInfo.address),
-          password: userInfo.password || "",
-          phoneNumber: userInfo.phoneNumber || "",
-          image,
-        };
-      } else {
-        updatedUserInfo = {
-          ...userInfo,
-          address: JSON.stringify(userInfo.address),
-          password: userInfo.password || "",
-          phoneNumber: userInfo.phoneNumber || "",
-        };
+  if (!session?.user) {
+    return redirect("/signin");
+  }
+  function onSubmit1(values: z.infer<typeof formSchema1>) {
+    startTransition(async () => {
+      try {
+        if (session?.user?.id) {
+          const res = await updateUserById(session.user.id, values);
+          if (res.success) {
+            toast.success(res.message);
+          }
+        } else {
+          console.error("User ID is undefined");
+        }
+      } catch (error) {
+        toast.error("An error occurred while updating the user.");
+        console.error("Error updating user:", error);
       }
-      const response = await updateUserById(session?.user?.id as string, updatedUserInfo);
-      if(response.success)
-        toast(response.message, {
-          description: `Updated on ${new Date().toLocaleString()}`,
-        });
-    } catch (error) {
-      console.error("Error updating user data:", error);
-    }
+    });
   }
 
-  if (!userInfo) {
-    return <div>Loading...</div>; // Or a more elegant loading state
+  function onSubmit2(values: z.infer<typeof formSchema2>) {
+    startTransition(async () => {
+      try {
+        if (session?.user?.id) {
+          const res = await updateUserById(session.user.id, {
+            address: values,
+          });
+          if (res.success) {
+            toast.success(res.message);
+          }
+        } else {
+          console.error("User ID is undefined");
+        }
+      } catch (error) {
+        toast.error("An error occurred while updating the user.");
+        console.error("Error updating user:", error);
+      }
+    });
+  }
+
+  async function onSubmit3(values: z.infer<typeof formSchema3>) {
+    if(values.new_password !== values.re_password){
+      toast.error("new password and renetered password not match");
+        return;
+    }
+    let isMatch;
+    if (password) {
+      isMatch = await bcrypt.compare(values.current_password, password);
+      if (!isMatch) {
+        toast.error("Current password is incorrect.");
+        return;
+      }
+    } else {
+      toast.error("Password is not loaded yet.");
+      return;
+    }
+    if (isMatch) {
+      startTransition(async () => {
+        try {
+          if (session?.user?.id) {
+            const res = await updateUserById(session.user.id, { password: values.new_password, });
+            if (res.success) {
+              toast.success(res.message);
+            }
+          } else {
+            console.error("User ID is undefined");
+          }
+        } catch (error) {
+          toast.error("An error occurred while updating the user.");
+          console.error("Error updating user:", error);
+        }
+      });
+    }
   }
 
   return (
     <div className="flex  h-full min-h-screen items-center justify-center">
       <div className=" gap-10 flex ">
-        <div className="">
-          <input
-            type="file"
-            hidden
-            id="file-inp"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-            accept="image/*"
-          />
-          <div
-            className="rounded-full bg-gray-800 w-40 h-40 flex items-center justify-center my-5"
-            onClick={(e) => {
-              document.getElementById("file-inp")?.click();
-            }}
-          >
-            <Image
-              src={
-                file
-                  ? URL.createObjectURL(file)
-                  : session?.user?.image || "/"
-              }
-              alt="Profile Picture"
-              className="rounded-full object-cover h-full w-full"
-              width={80}
-              height={80}
-            />
-          </div>
-          <h1 className="text-2xl font-semibold">
-            {userInfo.name || session?.user?.name}
-          </h1>
-          <p className="text-primary/70 text-sm max-w-lg">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam
-            voluptates, quidem, doloremque, quod
-          </p>
-        </div>
         <div className="flex ">
           <Tabs defaultValue="account" className="w-[600px]">
             <TabsList className="grid w-full grid-cols-3">
@@ -193,277 +218,216 @@ const page = () => {
               <TabsTrigger value="password">Password</TabsTrigger>
             </TabsList>
             <TabsContent value="account">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Account</CardTitle>
-                  <CardDescription>
-                    Make changes to your account here. Click save when you're
-                    done.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={userInfo.name}
-                      onChange={(e) =>
-                        setUserInfo({ ...userInfo, name: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      value={userInfo.email}
-                      onChange={(e) =>
-                        setUserInfo({ ...userInfo, email: e.target.value })
-                      }
-                    />
-                  </div>
-                  {/* <Accordion type="single" collapsible>
-                    <AccordionItem value="item-1">
-                      <AccordionTrigger>Address Details</AccordionTrigger>
-                      <AccordionContent className="space-y-5">
-                        
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion> */}
-                </CardContent>
-                <CardFooter>
-                  <Button onClick={onSubmit}>Save changes</Button>
-                </CardFooter>
-              </Card>
+              <Form {...form1}>
+                <form
+                  className="space-y-3  mx-auto"
+                  onSubmit={form1.handleSubmit(onSubmit1)}
+                >
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Account</CardTitle>
+                      <CardDescription>
+                        Make changes to your account here. Click save when
+                        you're done.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="space-y-1">
+                        <FormField
+                          control={form1.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Name</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Name" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <FormField
+                          control={form1.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Email" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <FormField
+                          control={form1.control}
+                          name="phoneNumber"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Phone Number</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Phone Number" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button type="submit">Save changes</Button>
+                    </CardFooter>
+                  </Card>
+                </form>
+              </Form>
             </TabsContent>
             <TabsContent value="address">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Address</CardTitle>
-                  <CardDescription>
-                    Change your password here. After saving, you'll be logged
-                    out.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="phoneNumber">Phone Number</Label>
-                    <Input
-                      id="phoneNumber"
-                      value={userInfo.phoneNumber}
-                      onChange={(e) =>
-                        setUserInfo({
-                          ...userInfo,
-                          phoneNumber: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="street">Street</Label>
-                    <Input
-                      id="street"
-                      value={userInfo.address?.street}
-                      onChange={(e) =>
-                        setUserInfo({
-                          ...userInfo,
-                          address: {
-                            ...userInfo.address,
-                            street: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      value={userInfo.address?.city}
-                      onChange={(e) =>
-                        setUserInfo({
-                          ...userInfo,
-                          address: {
-                            ...userInfo.address,
-                            city: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="postalCode">Postal Code</Label>
-                    <Input
-                      id="postalCode"
-                      value={userInfo.address?.postalCode}
-                      onChange={(e) =>
-                        setUserInfo({
-                          ...userInfo,
-                          address: {
-                            ...userInfo.address,
-                            postalCode: e.target.value,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button>Save password</Button>
-                </CardFooter>
-              </Card>
+              <Form {...form2}>
+                <form
+                  className="space-y-3  mx-auto"
+                  onSubmit={form2.handleSubmit(onSubmit2)}
+                >
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Address</CardTitle>
+                      <CardDescription>
+                        Change your password here. After saving, you'll be
+                        logged out.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="space-y-1">
+                        <FormField
+                          control={form2.control}
+                          name="street"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Street</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Street" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <FormField
+                          control={form2.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>City</FormLabel>
+                              <FormControl>
+                                <Input placeholder="City" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <FormField
+                          control={form2.control}
+                          name="postalCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Postal Code</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Postal Code" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button type="submit">Save Address</Button>
+                    </CardFooter>
+                  </Card>
+                </form>
+              </Form>
             </TabsContent>
             <TabsContent value="password">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Password</CardTitle>
-                  <CardDescription>
-                    Change your password here. After saving, you'll be logged
-                    out.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="space-y-1">
-                    <Label htmlFor="current">Current password</Label>
-                    <Input id="current" type="password" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor="new">New password</Label>
-                    <Input id="new" type="password" />
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button>Save password</Button>
-                </CardFooter>
-              </Card>
+              <Form {...form3}>
+                <form
+                  className="space-y-3  mx-auto"
+                  onSubmit={form3.handleSubmit(onSubmit3)}
+                >
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Password</CardTitle>
+                      <CardDescription>
+                        Change your password here. After saving, you'll be
+                        logged out.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="space-y-1">
+                        <FormField
+                          control={form3.control}
+                          name="current_password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Currrent Password</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Currrent Password"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <FormField
+                          control={form3.control}
+                          name="new_password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>New Password</FormLabel>
+                              <FormControl>
+                                <Input placeholder="New Password" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <FormField
+                          control={form3.control}
+                          name="re_password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Re Enter New Password</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="Re Enter New Password"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button type="submit">Save password</Button>
+                    </CardFooter>
+                  </Card>
+                </form>
+              </Form>
             </TabsContent>
           </Tabs>
-          {/* <Form {...form}>
-            <form
-              className="space-y-3  mx-auto"
-              onSubmit={form.handleSubmit(onSubmit)}
-            >
-              <div className="flex justify-between gap-5">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem className="w-full">
-                      <FormControl>
-                        <Input placeholder="name" {...field} type="text" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem className="w-full">
-                      <FormControl>
-                        <Input placeholder="email" {...field} type="email" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        placeholder="password"
-                        {...field}
-                        type="password"
-                      />
-                    </FormControl>
-                    <FormDescription className="text-xs text-start ">
-                      This is your password given from super admin.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Accordion type="single" collapsible>
-                <AccordionItem value="item-1">
-                  <AccordionTrigger>Address Details</AccordionTrigger>
-                  <AccordionContent className="space-y-5">
-                    <FormField
-                      control={form.control}
-                      name="address.city"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input placeholder="city" {...field} type="text" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="address.street"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input
-                              placeholder="street"
-                              {...field}
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="address.postalCode"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <Input
-                              placeholder="postalCode"
-                              {...field}
-                              type="text"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-              <FormField
-                control={form.control}
-                name="phoneNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        placeholder="+91 9080706050"
-                        {...field}
-                        type="number"
-                      />
-                    </FormControl>
-                    <FormDescription className="text-xs text-start ">
-                      This is your password given from super admin.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full rounded-xl">
-                Submit
-              </Button>
-            </form>
-          </Form> */}
         </div>
       </div>
     </div>

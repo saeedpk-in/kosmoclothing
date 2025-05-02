@@ -12,7 +12,6 @@ const CartSchema = new mongoose.Schema({
   items: [CartItemSchema],
   createdAt: { type: Date, default: Date.now },
 });
-// delete mongoose.models.Cart;
 const Cart = mongoose.models.Cart || mongoose.model("Cart", CartSchema);
 
 export default Cart;

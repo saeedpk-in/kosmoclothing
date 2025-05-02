@@ -365,13 +365,26 @@ const Navbar = () => {
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Image
-                  src={session?.user?.image || "/default-user.png"}
-                  alt={session?.user?.name || "user icon"}
-                  width={30}
-                  height={30}
-                  className="rounded-full border-black w-full h-full"
-                />
+                {session?.user ? (
+                    <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold"
+                    style={{
+                      backgroundColor: `#${(
+                      parseInt(session?.user?.id || "0", 36) % 16777215
+                      ).toString(16)}`,
+                    }}
+                    >
+                    {session?.user?.name?.charAt(0).toUpperCase() || "U"}
+                    </div>
+                ) : (
+                  <Image
+                    src={session?.user?.image || "/default-user.png"}
+                    alt={session?.user?.name || "user icon"}
+                    width={30}
+                    height={30}
+                    className="rounded-full border-black w-full h-full"
+                  />
+                )}
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
@@ -386,7 +399,7 @@ const Navbar = () => {
                   <Link href="/orders">
                     <DropdownMenuItem>
                       Orders
-                      <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
+                      <DropdownMenuShortcut>⌘O</DropdownMenuShortcut>
                     </DropdownMenuItem>
                   </Link>
                   <Link href="/shop">
@@ -395,6 +408,14 @@ const Navbar = () => {
                       <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
                     </DropdownMenuItem>
                   </Link>
+                  {session?.user && (
+                    <Link href="/profile">
+                      <DropdownMenuItem>
+                        Profile
+                        <DropdownMenuShortcut>⌘PF</DropdownMenuShortcut>
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 {session?.user ? (

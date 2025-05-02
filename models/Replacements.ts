@@ -16,5 +16,4 @@ const replacementSchema = new mongoose.Schema({
   requestedAt: { type: Date, default: Date.now },
   resolvedAt:  { type: Date, default: () => new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) },
 });
-delete mongoose.models.Replacement
 export default mongoose.models.Replacement || mongoose.model('Replacement', replacementSchema);

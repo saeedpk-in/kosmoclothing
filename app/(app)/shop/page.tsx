@@ -13,14 +13,15 @@ export const metadata: Metadata = {
 const ProductsSection = async ({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) => {
+  const params = await searchParams
   const { products, totalPages, currentPage } = await getProducts({
-    page: Number(searchParams.page),
+    page: Number(params.page),
     limit: 4 * 5,
-    category: searchParams.category as string,
-    priceSort: searchParams.priceSort as string,
-    searchQuery: searchParams.search as string,
+    category: params.category as string,
+    priceSort: params.priceSort as string,
+    searchQuery: params.search as string,
   });
 
   return (
@@ -40,7 +41,7 @@ const ProductsSection = async ({
 const page = async ({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) => {
   const params = await searchParams;
   const header = params.category || params.search || "Collect things you love";

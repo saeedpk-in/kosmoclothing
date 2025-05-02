@@ -56,7 +56,6 @@ const orderSchema = new Schema<Order>({
   createdAt: { type: Date, default: Date.now },
 });
 
-delete mongoose.models.Order;
 
 const Orders =
   mongoose.models.Order || mongoose.model<Order>("Order", orderSchema);

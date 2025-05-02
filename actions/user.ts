@@ -174,6 +174,7 @@ export async function getUserById(id: string) {
       address: user.address,
       phoneNumber: user.phoneNumber,
       image: user.image,
+      password:user.password
     })),
   };
 }
@@ -182,26 +183,35 @@ export async function getUserById(id: string) {
 export async function updateUserById(
   id: string,
   data: {
-    name: string;
-    email: string;
-    password: string;
-    address: string;
-    phoneNumber: string;
-    image?: string;
+    name?: string;
+    email?: string;
+    password?: string;
+    address?: {
+      street?: string;
+      city?: string;
+      postalCode?: string;
+    };
+    phoneNumber?: string;
   }
 ) {
   await connectToDatabase();
 
   // Destructure the incoming data
-  const { name, email, password, address, phoneNumber, image } = data;
+  const { name, email, password, address, phoneNumber } = data;
 
-  if (!name || !email || !password) {
-    return { error: "All fields and at least one image are required!" };
-  }
+
+  const updatedFields: any = {};
+  if (name) updatedFields.name = name;
+  if (email) updatedFields.email = email;
+  if (password) updatedFields.password = await bcrypt.hash(password, 10);
+  if (phoneNumber) updatedFields.phoneNumber = phoneNumber;
+  if (address?.street) updatedFields.address.street = address.street;
+  if (address?.city) updatedFields.address.city = address.city;
+  if (address?.postalCode) updatedFields.address.postalCode = address.postalCode;
 
   const updatedUser = await User.findOneAndUpdate(
     { _id: id },
-    { name, email, password, phoneNumber, address, image },
+    updatedFields,
     { new: true }
   );
 
@@ -209,7 +219,7 @@ export async function updateUserById(
     return { error: "User not found" };
   }
 
-  return { success:true , message: "User updated successfully!", user: updatedUser };
+  return { success:true , message: "User updated successfully!" };
 }
 
 export async function mergeGuestDataToUserData({ cartId , email ,orderIds  }:{cartId: string | null, orderIds: string[] | null, email: string}) {
