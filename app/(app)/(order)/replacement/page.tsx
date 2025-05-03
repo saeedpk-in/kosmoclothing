@@ -72,22 +72,24 @@ const ReplacementsPage = () => {
           <p className="text-gray-600 mb-6">
             You haven't loggedIn so first login.
           </p>
-          <Button asChild>
-            <Link
-              href="/signin"
-              className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
-            >
-              Login Now
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link
-              href="/"
-              className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
-            >
-              Continue Shopping
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild>
+              <Link
+                href="/signin"
+                className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
+              >
+                Login Now
+              </Link>
+            </Button>
+            <Button asChild>
+              <Link
+                href="/"
+                className="bg-primary text-white px-6 py-2 rounded-md hover:bg-primary-dark transition-colors"
+              >
+                Continue Shopping
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -135,18 +137,18 @@ const ReplacementsPage = () => {
 
   return (
     <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm items-center py-8">
-      <h1 className="text-5xl font-extrabold  mb-8">Your Orders</h1>
+      <h1 className="text-4xl font-extrabold  mb-8">Your Replacements</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-2 px-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-2 md:px-10">
         {replacements.map((replacement) => (
           <Card className="pb-0" key={replacement._id}>
             <CardHeader>
               <div className="flex justify-between">
                 <div className=" flex flex-col gap-2">
                   <CardTitle className="text-gray-400/70">Order ID</CardTitle>
-                  <CardTitle>#{replacement._id}</CardTitle>
+                  <CardTitle className="text-xs">#{replacement._id}</CardTitle>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-col md:flex-row gap-2 md:items-center items-end">
                   <Badge className="rounded-full" variant={"outline"}>
                     Estimated Delivery {formatDate(replacement.resolvedAt)}
                   </Badge>

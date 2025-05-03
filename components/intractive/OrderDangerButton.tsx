@@ -105,7 +105,7 @@ export default function OrderDangerButton({
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline">replace product</Button>
+                <Button variant="outline">Replace Product</Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>

@@ -1,4 +1,4 @@
-"use server"
+"use server";
 // app/actions/userActions.ts
 import { connectToDatabase } from "@/lib/mongodb";
 import User, { IUser } from "@/models/User";
@@ -31,9 +31,12 @@ export async function createUser({
   try {
     // Connect to the database
     await connectToDatabase();
-    const existingUser = await User.findOne({email})
-    if(existingUser){
-      return { success: false, error: "In this email there is an account.so please move to login" };
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return {
+        success: false,
+        error: "In this email there is an account.so please move to login",
+      };
     }
 
     // Generate verification tokens
@@ -44,7 +47,7 @@ export async function createUser({
 
     // Send verification email
     await sendEmailVerification(email, emailVerificationToken);
-    
+
     // Hash password
     const bPassword = await bcrypt.hash(password, 10);
 
@@ -71,7 +74,7 @@ export async function createUser({
         await cart.save();
       }
     }
-    if(orderIds){
+    if (orderIds) {
       await Orders.updateMany(
         { _id: { $in: orderIds }, userId: null },
         { $set: { userId: newUser._id } }
@@ -81,7 +84,7 @@ export async function createUser({
     return { success: true, message: "Verification email has been sent." };
   } catch (error) {
     console.log(error);
-    
+
     return { success: false, error: (error as Error).message };
   }
 }
@@ -103,10 +106,27 @@ const transporter = nodemailer.createTransport({
 // Send Email Verification
 export async function sendEmailVerification(email: string, token: any) {
   const message = {
-    from: process.env.EMAIL_USER,
+    from: `"Kosmo Verification" <${process.env.EMAIL_USER}>`,
     to: email,
-    subject: "Email Verification",
-    text: `Your verification code is ${token}`,
+    subject: "Your Kosmo Verification Code",
+    html: `
+      <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 30px;">
+        <div style="max-width: 600px; margin: auto; background-color: #ffffff; padding: 40px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+          <h2 style="text-align: center; color: #333;">Kosmo Verification</h2>
+          <p style="text-align: center; color: #666;">Use the code below to verify your email address:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <span style="display: inline-block; font-size: 36px; font-weight: bold; letter-spacing: 4px; padding: 20px 40px; background-color: #f0f0f0; border-radius: 6px; color: #222;">${token}</span>
+          </div>
+          <p style="color: #555; font-size: 14px; line-height: 1.6;">
+            If you didn't request this code, it's possible someone is trying to access your account using your email address. 
+            Please do not share this code with anyone.
+          </p>
+          <p style="color: #999; font-size: 12px; margin-top: 40px; text-align: center;">
+            This email was sent by Kosmo. If you have any questions, please contact our support team.
+          </p>
+        </div>
+      </div>
+    `,
   };
 
   await transporter.sendMail(message);
@@ -168,14 +188,16 @@ export async function getUserById(id: string) {
 
   return {
     success: true,
-    user: JSON.parse(JSON.stringify({
-      name: user.name,
-      email: user.email,
-      address: user.address,
-      phoneNumber: user.phoneNumber,
-      image: user.image,
-      password:user.password
-    })),
+    user: JSON.parse(
+      JSON.stringify({
+        name: user.name,
+        email: user.email,
+        address: user.address,
+        phoneNumber: user.phoneNumber,
+        image: user.image,
+        password: user.password,
+      })
+    ),
   };
 }
 
@@ -199,7 +221,6 @@ export async function updateUserById(
   // Destructure the incoming data
   const { name, email, password, address, phoneNumber } = data;
 
-
   const updatedFields: any = {};
   if (name) updatedFields.name = name;
   if (email) updatedFields.email = email;
@@ -207,24 +228,31 @@ export async function updateUserById(
   if (phoneNumber) updatedFields.phoneNumber = phoneNumber;
   if (address?.street) updatedFields.address.street = address.street;
   if (address?.city) updatedFields.address.city = address.city;
-  if (address?.postalCode) updatedFields.address.postalCode = address.postalCode;
+  if (address?.postalCode)
+    updatedFields.address.postalCode = address.postalCode;
 
-  const updatedUser = await User.findOneAndUpdate(
-    { _id: id },
-    updatedFields,
-    { new: true }
-  );
+  const updatedUser = await User.findOneAndUpdate({ _id: id }, updatedFields, {
+    new: true,
+  });
 
   if (!updatedUser) {
     return { error: "User not found" };
   }
 
-  return { success:true , message: "User updated successfully!" };
+  return { success: true, message: "User updated successfully!" };
 }
 
-export async function mergeGuestDataToUserData({ cartId , email ,orderIds  }:{cartId: string | null, orderIds: string[] | null, email: string}) {
+export async function mergeGuestDataToUserData({
+  cartId,
+  email,
+  orderIds,
+}: {
+  cartId: string | null;
+  orderIds: string[] | null;
+  email: string;
+}) {
   try {
-    await connectToDatabase()
+    await connectToDatabase();
     const user = await User.findOne({ email });
     if (!user) {
       return { success: false, error: "User not found" };
@@ -245,7 +273,10 @@ export async function mergeGuestDataToUserData({ cartId , email ,orderIds  }:{ca
     }
 
     guestCart.items.forEach((guestItem: any) => {
-      const existingItem = userCart.items.find((item: any) => item.productId === guestItem.productId && item.size === guestItem.size);
+      const existingItem = userCart.items.find(
+        (item: any) =>
+          item.productId === guestItem.productId && item.size === guestItem.size
+      );
       if (existingItem) {
         existingItem.quantity += guestItem.quantity;
       } else {
@@ -261,8 +292,95 @@ export async function mergeGuestDataToUserData({ cartId , email ,orderIds  }:{ca
       { $set: { userId: user._id } }
     );
 
-    return { success: true  };
+    return { success: true };
   } catch (error) {
     return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function sendContactMessage(data: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}) {
+  try {
+    const message = {
+      from: `"Conatct Form |" <${process.env.EMAIL_USER}>`,
+      to: "info@kosmoclothing.in",
+      subject: `New Contact Message: ${data.subject}`,
+      html: `
+        <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e5e5; border-radius: 4px; overflow: hidden;">
+    <!-- Header -->
+    <div style="background-color: #000000; padding: 25px; text-align: center;">
+      <h1 style="color: #ffffff; font-size: 22px; margin: 0; font-weight: 500;">New Contact Form Submission</h1>
+    </div>
+    
+    <!-- Content -->
+    <div style="padding: 30px;">
+      <div style="margin-bottom: 25px;">
+        <span style="display: block; font-size: 14px; color: #666666; margin-bottom: 5px;">From</span>
+        <span style="font-size: 16px; color: #000000;">${data.name} &lt;${
+        data.email
+      }&gt;</span>
+      </div>
+      
+      <div style="margin-bottom: 25px;">
+        <span style="display: block; font-size: 14px; color: #666666; margin-bottom: 5px;">Subject</span>
+        <span style="font-size: 16px; color: #000000;">${data.subject}</span>
+      </div>
+      
+      <div style="border-top: 1px solid #eeeeee; margin: 25px 0;"></div>
+      
+      <div style="background-color: #f9f9f9; border-left: 4px solid #000000; padding: 15px; margin-bottom: 25px;">
+        ${data.message.replace(/\n/g, "<br>")}
+      </div>
+      
+      <div style="border-top: 1px solid #eeeeee; margin: 25px 0;"></div>
+      
+      <p style="margin-bottom: 0; font-size: 14px; color: #333333;">
+        Reply directly to this email to respond to ${data.name}.
+      </p>
+    </div>
+    
+    <!-- Footer -->
+    <div style="background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 12px; color: #999999; border-top: 1px solid #eeeeee;">
+      <p style="margin: 0 0 5px 0;">© ${new Date().getFullYear()} Kosmo Clothing</p>
+    </div>
+  </div>
+      `,
+    };
+
+    await transporter.sendMail(message);
+
+    return {
+      success:true
+    }
+  } catch (error) {
+    return {
+      success:false,
+      message:"An error occured to sent message try again"
+    }
+  }
+}
+export async function addEmail(email:string) {
+  try {
+    const message = {
+      from: `"Conatct Form |" <${process.env.EMAIL_USER}>`,
+      to: "info@kosmoclothing.in",
+      subject: "New Newsletter ",
+      text: `email:${email}`,
+    };
+
+    await transporter.sendMail(message);
+
+    return {
+      success:true
+    }
+  } catch (error) {
+    return {
+      success:false,
+      message:"An error occured to sent message try again"
+    }
   }
 }

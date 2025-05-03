@@ -366,16 +366,16 @@ const Navbar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 {session?.user ? (
-                    <div
+                  <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold"
                     style={{
                       backgroundColor: `#${(
-                      parseInt(session?.user?.id || "0", 36) % 16777215
+                        parseInt(session?.user?.id || "0", 36) % 16777215
                       ).toString(16)}`,
                     }}
-                    >
+                  >
                     {session?.user?.name?.charAt(0).toUpperCase() || "U"}
-                    </div>
+                  </div>
                 ) : (
                   <Image
                     src={session?.user?.image || "/default-user.png"}
@@ -485,6 +485,15 @@ const Navbar = () => {
                     About
                   </motion.div>
                 </Link>
+                <Link href="/about#meet-founders">
+                  <motion.div
+                    whileTap={{ scale: 0.98 }}
+                    className="block px-3 py-2 text-base font-medium hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Meet the founders
+                  </motion.div>
+                </Link>
 
                 <Link href="/contact">
                   <motion.div
@@ -529,7 +538,50 @@ const Navbar = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="w-56">
-                        {/* ... rest of your dropdown menu items ... */}
+                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuGroup>
+                          <Link href="/pocket">
+                            <DropdownMenuItem>
+                              Pocket
+                              <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+                            </DropdownMenuItem>
+                          </Link>
+                          <Link href="/orders">
+                            <DropdownMenuItem>
+                              Orders
+                              <DropdownMenuShortcut>⌘O</DropdownMenuShortcut>
+                            </DropdownMenuItem>
+                          </Link>
+                          <Link href="/shop">
+                            <DropdownMenuItem>
+                              Shop
+                              <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
+                            </DropdownMenuItem>
+                          </Link>
+                          {session?.user && (
+                            <Link href="/profile">
+                              <DropdownMenuItem>
+                                Profile
+                                <DropdownMenuShortcut>⌘PF</DropdownMenuShortcut>
+                              </DropdownMenuItem>
+                            </Link>
+                          )}
+                        </DropdownMenuGroup>
+                        <DropdownMenuSeparator />
+                        {session?.user ? (
+                          <DropdownMenuItem onClick={() => signOut()}>
+                            Log out
+                            <DropdownMenuShortcut>⇧⌘Q</DropdownMenuShortcut>
+                          </DropdownMenuItem>
+                        ) : (
+                          <Link href="/signin">
+                            <DropdownMenuItem>
+                              Log In
+                              <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
+                            </DropdownMenuItem>
+                          </Link>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

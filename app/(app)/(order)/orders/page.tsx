@@ -104,7 +104,7 @@ const OrdersPage = () => {
           </Link>
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-2 px-10">
+      <div className="grid grid-cols-1 md:grid-cols-2 w-full gap-2  md:px-10">
         {orders.map((order) => (
           // <div key={order._id} className="border rounded-lg p-6 shadow-sm  ">
           //   <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 mt-4">
@@ -366,10 +366,10 @@ const OrdersPage = () => {
               <div className="flex justify-between">
                 <div className=" flex flex-col gap-2">
                   <CardTitle className="text-gray-400/70">Order ID</CardTitle>
-                  <CardTitle>#{order._id}</CardTitle>
+                  <CardTitle className="text-xs">#{order._id}</CardTitle>
                 </div>
-                <div className="flex gap-2">
-                  <Badge className="rounded-full" variant={"outline"}>
+                <div className="flex flex-col md:flex-row gap-2 md:items-center items-end">
+                  <Badge className="rounded-full " variant={"outline"}>
                     Estimated Delivery {formatDate(order.deliveredAt)}
                   </Badge>
                   <Badge className="bg-green-200/30 border-none text-green-600 uppercase rounded-full text-sm px-4 py-2">

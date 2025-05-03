@@ -211,7 +211,7 @@ const page = () => {
     <div className="flex  h-full min-h-screen items-center justify-center">
       <div className=" gap-10 flex ">
         <div className="flex ">
-          <Tabs defaultValue="account" className="w-[600px]">
+          <Tabs defaultValue="account" className="w-[400px] md:w-[600px] ">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="account">Account</TabsTrigger>
               <TabsTrigger value="address">Address</TabsTrigger>
