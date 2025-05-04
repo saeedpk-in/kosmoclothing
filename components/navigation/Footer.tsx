@@ -94,7 +94,7 @@ const Footer = () => {
       links: [
         { name: "Terms of Service", href: "/terms-of-service" },
         { name: "Privacy Policy", href: "/privacy-policy" },
-        { name: "Refund Policy", href: "/retund-policy" },
+        { name: "Refund Policy", href: "/return-policy" },
         { name: "Shipping Policy", href: "/shipping-policy" },
       ],
     },

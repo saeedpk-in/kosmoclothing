@@ -185,8 +185,8 @@ export default function PrivacyPolicy() {
               For privacy-related inquiries or requests, please contact our Data Protection Officer:
             </p>
             <ul className="mt-3 space-y-2 text-gray-700">
-              <li>Email: privacy@kosmoclothing.in</li>
-              <li>Mail: Kosmo Privacy Team, 123 Minimal Street, Simplicity City, India</li>
+              <li>Email: info@kosmoclothing.in</li>
+              <li>Address: Ponnani,Malappuram,kerala, India-679577</li>
             </ul>
           </section>
         </div>

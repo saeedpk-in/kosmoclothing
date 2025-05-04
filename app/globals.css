@@ -121,3 +121,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+@supports (-webkit-touch-callout: none) {
+  @media screen and (max-device-width: 1024px) {
+    .bg-fixed {
+      background-attachment: scroll !important;
+    }
+  }
+}

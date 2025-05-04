@@ -11,7 +11,7 @@ export default function AboutPage() {
           Crafting Timeless Essentials
         </h1>
         <p className="mt-6 text-lg md:text-xl text-gray-600 max-w-3xl">
-          Where minimalism meets exceptional craftsmanship. Since 20XX, we've
+          Where minimalism meets exceptional craftsmanship. Since 2020, we've
           been redefining wardrobe essentials with purpose and precision.
         </p>
       </div>

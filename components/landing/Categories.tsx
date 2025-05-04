@@ -335,13 +335,13 @@ const Categories = () => {
       id: 3,
       name: "Kids",
       description: "Cute and comfy kids wear",
-      image: "/kids.PNG",
+      image: "/kids.png",
     },
     {
       id: 4,
       name: "Unisex",
       description: "Versatile styles for all",
-      image: "/unisex.PNG",
+      image: "/unisex.png",
     },
     {
       id: 5,
@@ -353,7 +353,7 @@ const Categories = () => {
       id: 6,
       name: "Casual",
       description: "Everyday comfortable fashion",
-      image: "/casual.JPG",
+      image: "/casual.jpg",
     },
     {
       id: 7,

@@ -20,9 +20,6 @@ export default async function Home() {
       <TrendingItems />
       <Fasion />
       <Testimonials />
-      {/* <StyleEdit /> */}
-      {/* <UserGallery /> */}
-      {/* <SaleSection /> */}
       <NewsletterSignup />
       
     </div>
